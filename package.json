@@ -1,0 +1,40 @@
+{
+    "name": "cryptoped",
+    "version": "0.0.1",
+    "description": "small fast specific crypto package",
+    "keywords": ["crypto", "hmac", "sha256", "pbkdf2"],
+    "licenses": [
+        {
+            "type": "MIT",
+            "url": "http://www.opensource.org/licenses/mit-license.php"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/dtudury/cryptoped"
+        }
+    ],
+    "bugs": "https://github.com/dtudury/cryptoped/issues",
+    "maintainers": [
+        {
+            "name": "David Tudury",
+        }
+    ],
+    "contributors": [
+        {
+            "name": "David Tudury",
+        }
+    ],
+    "devDependencies": {
+        "buster": "~0.6",
+        "jshint": "~1"
+    },
+    "main": "meld",
+    "directories": {
+        "test": "test"
+    },
+    "scripts": {
+        "test": "jshint . && buster test -e node"
+    }
+}
