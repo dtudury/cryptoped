@@ -1,8 +1,8 @@
 {
     "name": "cryptoped",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "small fast specific crypto package",
-    "keywords": ["crypto", "hmac", "sha256", "pbkdf2"],
+    "keywords": ["crypto", "hmac", "sha256", "sha1", "pbkdf2"],
     "licenses": [
         {
             "type": "MIT",
@@ -18,12 +18,12 @@
     "bugs": "https://github.com/dtudury/cryptoped/issues",
     "maintainers": [
         {
-            "name": "David Tudury",
+            "name": "David Tudury"
         }
     ],
     "contributors": [
         {
-            "name": "David Tudury",
+            "name": "David Tudury"
         }
     ],
     "devDependencies": {

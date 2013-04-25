@@ -11,24 +11,29 @@
 
         var _K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
 
+        sha256.wordsHasher = _sha256Words;
+        sha256.outputSize = 256;
         crytoped.sha256 = sha256;
+        sha1.wordsHasher = _sha1Words;
+        sha1.outputSize = 160;
+        crytoped.sha1 = sha1;
         crytoped.hmac = hmac;
         crytoped.pbkdf2 = pbkdf2;
 
         function crytoped() {
         }
 
-        function pbkdf2(password, salt, iterations, keyLength) {
+        function pbkdf2(password, salt, iterations, keyLength, hasher) {
             var keyWords = _charStringToWords(password);
             var output = [];
             var keyIndex = 0;
             while (keyIndex < keyLength / 32) {
                 keyIndex++;
                 var message = salt + String.fromCharCode((keyIndex >>> 24) & 0xff) + String.fromCharCode((keyIndex >>> 16) & 0xff) + String.fromCharCode((keyIndex >>> 8) & 0xff) + String.fromCharCode((keyIndex >>> 0) & 0xff);
-                var u = _hmacWords(keyWords, _charStringToWords(message + "\x80"), message.length * 8);
+                var u = _hmacWords(keyWords, _charStringToWords(message + "\x80"), message.length * 8, hasher);
                 var ui = u;
                 for (var i = 1; i < iterations; i++) {
-                    ui = _hmacWords(keyWords, ui.concat(0x80000000), 256);
+                    ui = _hmacWords(keyWords, ui.concat(0x80000000), hasher.outputSize, hasher);
                     for (var j = 0; j < u.length; j++) {
                         u[j] ^= ui[j];
                     }
@@ -38,19 +43,23 @@
             return output.slice(0, Math.ceil(keyLength / 4));
         }
 
-        function hmac(key, message) {
+        function hmac(key, message, hasher) {
             if (key.length >= 64) {
-                return _hmacWords(sha256(key), _charStringToWords(message + "\x80"), message.length * 8);
+                return _hmacWords(hasher(key), _charStringToWords(message + "\x80"), message.length * 8, hasher);
             } else {
-                return _hmacWords(_charStringToWords(key), _charStringToWords(message + "\x80"), message.length * 8);
+                return _hmacWords(_charStringToWords(key), _charStringToWords(message + "\x80"), message.length * 8, hasher);
             }
         }
 
         function sha256(message) {
-            return _hashWords(_charStringToWords(message + "\x80"), message.length * 8);
+            return sha256.wordsHasher(_charStringToWords(message + "\x80"), message.length * 8);
         }
 
-        function _hmacWords(keyWords, messageWords, messageBits) {
+        function sha1(message) {
+            return sha1.wordsHasher(_charStringToWords(message + "\x80"), message.length * 8);
+        }
+
+        function _hmacWords(keyWords, messageWords, messageBits, hasher) {
             while (keyWords.length < 16) keyWords.push(0);
             var oKeyPad = [];
             var iKeyPad = [];
@@ -59,11 +68,11 @@
                 oKeyPad[i] = (keyWord ^ 0x5c5c5c5c);
                 iKeyPad[i] = (keyWord ^ 0x36363636);
             }
-            var innerHash = _hashWords(iKeyPad.concat(messageWords), 512 + messageBits);
-            return _hashWords(oKeyPad.concat(innerHash, 0x80000000), 768);
+            var innerHash = hasher.wordsHasher(iKeyPad.concat(messageWords), 512 + messageBits);
+            return hasher.wordsHasher(oKeyPad.concat(innerHash, 0x80000000), 512 + hasher.outputSize);
         }
 
-        function _hashWords(words, bits) {
+        function _sha256Words(words, bits) {
             words.concat([0, 0]);
             while (words.length % 16) words.push(0);
             words[words.length - 2] = (Math.floor(bits / 0x100000000));
@@ -109,7 +118,6 @@
                     hi = gi;
                     gi = fi;
                     fi = ei;
-                    // BREADCRUMB
                     ei = (di + t1) >>> 0;
                     di = ci;
                     ci = bi;
@@ -126,6 +134,65 @@
                 h = (h + hi);
             }
             return [a >>> 0, b >>> 0, c >>> 0, d >>> 0, e >>> 0, f >>> 0, g >>> 0, h >>> 0];
+        }
+
+        function _sha1Words(words, bits) {
+            words.concat([0, 0]);
+            while (words.length % 16) words.push(0);
+            words[words.length - 2] = (Math.floor(bits / 0x100000000));
+            words[words.length - 1] = (bits >>> 0);
+            var h0 = 0x67452301;
+            var h1 = 0xefcdab89;
+            var h2 = 0x98badcfe;
+            var h3 = 0x10325476;
+            var h4 = 0xc3d2e1f0;
+            var chunks = [];
+            var i;
+            for (i = 0; i < words.length; i += 16) {
+                chunks.push(words.slice(i, i + 16));
+            }
+            var chunksLength = words.length / 16;
+            for (var chunkIndex = 0; chunkIndex < chunksLength; chunkIndex++) {
+                var chunk = chunks[chunkIndex];
+                for (i = 16; i < 80; i++) {
+                    var w = chunk[i - 3] ^ chunk[i - 8] ^ chunk[i - 14] ^ chunk[i - 16];
+                    chunk[i] = w << 1 | w >>> 31;
+                }
+                var a = h0 >>> 0;
+                var b = h1 >>> 0;
+                var c = h2 >>> 0;
+                var d = h3 >>> 0;
+                var e = h4 >>> 0;
+                var f;
+                var k;
+                for (i = 0; i < 80; i++) {
+                    if (i < 20) {
+                        f = (b & c) | (~b & d);
+                        k = 0x5a827999;
+                    } else if (i < 40) {
+                        f = b ^ c ^ d;
+                        k = 0x6ed9eba1;
+                    } else if (i < 60) {
+                        f = (b & c) | (b & d) | (c & d);
+                        k = 0x8f1bbcdc;
+                    } else {
+                        f = b ^ c ^ d;
+                        k = 0xca62c1d6;
+                    }
+                    var temp = (a << 5 | a >>> 27) + f + e + k + chunk[i];
+                    e = d;
+                    d = c;
+                    c = b << 30 | b >>> 2;
+                    b = a;
+                    a = temp;
+                }
+                h0 += a;
+                h1 += b;
+                h2 += c;
+                h3 += d;
+                h4 += e;
+            }
+            return [h0 >>> 0, h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
         }
 
         function _charStringToWords(charString) {

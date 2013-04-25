@@ -19,7 +19,7 @@ window.onload = function () {
                 }
             }
 
-            function test(pbkdf2Algo, algoName, callback) {
+            function testPbkdf2Sha2(pbkdf2Algo, algoName, callback) {
                 return function () {
                     var t0 = (new Date()).getTime();
 
@@ -44,13 +44,36 @@ window.onload = function () {
 
                     document.write(algoName + " total runtime: <br/>" + ((t1 - t0) / 1000) + "<br/><br/><br/><br/>");
                     console.log(algoName + " test complete " + ((t1 - t0) / 1000) + "\n\n");
-                    callback();
+                    if(callback) callback();
                 }
 
             }
+            function testPbkdf2Sha1(pbkdf2Algo, algoName, callback) {
+                return function () {
+                    var t0 = (new Date()).getTime();
 
-            var cryptopedPbkdf2Algo = function (password, salt, iterations, keyLength) {
-                var wordArray = cryptoped.pbkdf2(password, salt, iterations, keyLength);
+                    writeTestOutput(pbkdf2Algo, algoName, "password", "salt", 1, 20,
+                        "0c60c80f961f0e71f3a9b524af6012062fe037a6");
+                    writeTestOutput(pbkdf2Algo, algoName, "password", "salt", 2, 20,
+                        "ea6c014dc72d6f8ccd1ed92ace1d41f0d8de8957");
+                    writeTestOutput(pbkdf2Algo, algoName, "password", "salt", 4096, 20,
+                        "4b007901b765489abead49d926f721d065a429c1");
+//                    writeTestOutput(pbkdf2Algo, algoName, "password", "salt", 16777216, 20,
+//                        "eefe3d61cd4da4e4e9945b3d6ba2158c2634e984");
+//                    writeTestOutput(pbkdf2Algo, algoName, "passwordPASSWORDpassword", "saltSALTsaltSALTsaltSALTsaltSALTsalt", 4096, 25,
+//                        "3d2eec4fe41c849b80c8d83662c0e44a8b291a96");
+//                    writeTestOutput(pbkdf2Algo, algoName, "pass\0word", "sa\0lt", 4096, 16,
+//                        "56fa6aa75548099dcc37d7f03425e0c3");
+                    var t1 = (new Date()).getTime();
+
+                    document.write(algoName + " total runtime: <br/>" + ((t1 - t0) / 1000) + "<br/><br/><br/><br/>");
+                    console.log(algoName + " test complete " + ((t1 - t0) / 1000) + "\n\n");
+                    if(callback) callback();
+                }
+            }
+
+            var cryptopedPbkdf2Sha2Algo = function (password, salt, iterations, keyLength) {
+                var wordArray = cryptoped.pbkdf2(password, salt, iterations, keyLength, cryptoped.sha256);
                 var output = "";
                 for (var i = 0; i < wordArray.length; i++) {
                     string = (wordArray[i] >>> 0).toString(16);
@@ -60,7 +83,18 @@ window.onload = function () {
                 return output;
             }
 
-            var cryptoJsPbkdf2Algo = function (password, salt, iterations, keyLength) {
+            var cryptopedPbkdf2Sha1Algo = function (password, salt, iterations, keyLength) {
+                var wordArray = cryptoped.pbkdf2(password, salt, iterations, keyLength, cryptoped.sha1);
+                var output = "";
+                for (var i = 0; i < wordArray.length; i++) {
+                    string = (wordArray[i] >>> 0).toString(16);
+                    while (string.length < 8) string = "0" + string;
+                    output += string;
+                }
+                return output;
+            }
+
+            var cryptoJsPbkdf2Sha2Algo = function (password, salt, iterations, keyLength) {
                 var keySize = 128 / 32;
                 if (keyLength > 32) {
                     keySize = 512 / 32;
@@ -71,10 +105,36 @@ window.onload = function () {
                 return key256Bits.toString(CryptoJS.enc.Hex).slice(0, keyLength * 2);
             }
 
+            var cryptoJsPbkdf2Sha1Algo = function (password, salt, iterations, keyLength) {
+                var keySize = 128 / 32;
+                if (keyLength > 32) {
+                    keySize = 512 / 32;
+                } else if (keyLength > 16) {
+                    keySize = 256 / 32;
+                }
+                var key256Bits = CryptoJS.PBKDF2(password, salt, { keySize: keySize, iterations: iterations});
+                return key256Bits.toString(CryptoJS.enc.Hex).slice(0, keyLength * 2);
+            }
 
-            setTimeout(test(cryptoJsPbkdf2Algo, "cryptoJs", function() {
-                setTimeout(test(cryptopedPbkdf2Algo, "cryptoped", null), 0);
+
+            setTimeout(testPbkdf2Sha2(cryptoJsPbkdf2Sha2Algo, "cryptoJs pbkdf2-hmac-sha256", function() {
+                setTimeout(testPbkdf2Sha2(cryptopedPbkdf2Sha2Algo, "cryptoped pbkdf2-hmac-sha256", function() {
+                    setTimeout(testPbkdf2Sha1(cryptoJsPbkdf2Sha1Algo, "cryptoJS pbkdf2-hmac-sha1", function() {
+                        setTimeout(testPbkdf2Sha1(cryptopedPbkdf2Sha1Algo, "cryptoped pbkdf2-hmac-sha1", null), 0);
+                    }), 0);
+                }), 0);
             }), 0);
+
+
+//            var wordArray = cryptoped.hmac("", "", cryptoped.sha1);
+////            var wordArray = cryptoped.hmac("", "", cryptoped.sha256);
+//            var output = "";
+//            for (var i = 0; i < wordArray.length; i++) {
+//                string = (wordArray[i] >>> 0).toString(16);
+//                while (string.length < 8) string = "0" + string;
+//                output += string;
+//            }
+//            console.log( output);
 
         }
     );
