@@ -111,8 +111,8 @@
                 chunk[i] = chunk[i - 16] + s0 + chunk[i - 7] + s1;
             }
             var ai = a >>> 0;
-            var bi = b >>> 0;
-            var ci = c >>> 0;
+            var bi = b;
+            var ci = c;
             var di = d >>> 0;
             var ei = e >>> 0;
             var fi = f >>> 0;
@@ -124,15 +124,15 @@
                 var t2 = (S0 + maj);
                 var S1 = (ei >>> 6 | ei << 26) ^ (ei >>> 11 | ei << 21) ^ (ei >>> 25 | ei << 7);
                 var ch = (ei & fi) ^ (~ei & gi);
-                var t1 = (hi + S1 + ch + _K[i] + chunk[i]);
+                var t1 = (hi + S1 + ch + _K[i] + chunk[i]) >>> 0;
                 hi = gi;
                 gi = fi;
                 fi = ei;
-                ei = (di + t1) >>> 0;
+                ei = (di + t1);
                 di = ci;
                 ci = bi;
                 bi = ai;
-                ai = (t1 + t2) >>> 0;
+                ai = (t1 + t2);
             }
             a = (a + ai);
             b = (b + bi);
@@ -143,7 +143,7 @@
             g = (g + gi);
             h = (h + hi);
         }
-        return [a >>> 0, b >>> 0, c >>> 0, d >>> 0, e >>> 0, f >>> 0, g >>> 0, h >>> 0];
+        return [a, b, c, d, e, f, g, h];
     }
 
     function _sha1Words(words, bits) {
@@ -164,35 +164,34 @@
         var chunksLength = words.length / 16;
         for (var chunkIndex = 0; chunkIndex < chunksLength; chunkIndex++) {
             var chunk = chunks[chunkIndex];
-            for (i = 16; i < 80; i++) {
-                var w = chunk[i - 3] ^ chunk[i - 8] ^ chunk[i - 14] ^ chunk[i - 16];
-                chunk[i] = w << 1 | w >>> 31;
-            }
-            var a = h0 >>> 0;
-            var b = h1 >>> 0;
+            var a = h0;
+            var b = h1;
             var c = h2 >>> 0;
-            var d = h3 >>> 0;
-            var e = h4 >>> 0;
-            var f;
-            var k;
+            var d = h3;
+            var e = h4;
             for (i = 0; i < 80; i++) {
-                if (i < 20) {
-                    f = (b & c) | (~b & d);
-                    k = 0x5a827999;
-                } else if (i < 40) {
-                    f = b ^ c ^ d;
-                    k = 0x6ed9eba1;
-                } else if (i < 60) {
-                    f = (b & c) | (b & d) | (c & d);
-                    k = 0x8f1bbcdc;
+                var temp;
+                if( i < 16) {
+                    temp = (a >>> 27 | a << 5) + e + chunk[i];
                 } else {
-                    f = b ^ c ^ d;
-                    k = 0xca62c1d6;
+                    var w = chunk[i - 3] ^ chunk[i - 8] ^ chunk[i - 14] ^ chunk[i - 16];
+                    w = w >>> 31 | w << 1;
+                    chunk[i] = w;
+                    temp = (a >>> 27 | a << 5) + e + w;
                 }
-                var temp = (a << 5 | a >>> 27) + f + e + k + chunk[i];
+                if (i < 20) {
+                    temp += ((b & c) | (~b & d)) + 0x5a827999;
+                } else if (i < 40) {
+                    temp += (b ^ c ^ d) + 0x6ed9eba1;
+                } else if (i < 60) {
+                    temp += ((b & c) | (b & d) | (c & d)) + 0x8f1bbcdc;
+                } else {
+                    temp += (b ^ c ^ d) + 0xca62c1d6;
+                }
+
                 e = d;
                 d = c;
-                c = b << 30 | b >>> 2;
+                c = b >>> 2 | b << 30;
                 b = a;
                 a = temp;
             }
@@ -202,7 +201,7 @@
             h3 += d;
             h4 += e;
         }
-        return [h0 >>> 0, h1 >>> 0, h2 >>> 0, h3 >>> 0, h4 >>> 0];
+        return [h0, h1, h2, h3, h4];
     }
 
     function hexStringToWords(hexString) {

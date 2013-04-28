@@ -6,6 +6,6 @@
     "author"        : "David Tudury <david.tudury@gmail.com>",
     "repository"    : {"type": "git", "url": "git://github.com/dtudury/cryptoped.git"},
     "main"          : "cryptoped.js",
-    "version"       : "0.0.5",
+    "version"       : "0.0.6",
     "license"       : "MIT"
 }

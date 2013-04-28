@@ -1,7 +1,7 @@
 cryptoped
 =========
 
-highly optimized specific use crypto library
+highly optimized (specificly for pbkdf2 on chrome) crypto library
 
 I wrote this (because it was fun and) for a password generator.
 crypto-js (https://code.google.com/p/crypto-js/) is awesome but
